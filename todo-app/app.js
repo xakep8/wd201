@@ -16,9 +16,7 @@ app.get("/todos", async function (_request, response) {
   // Then, we have to respond with all Todos, like:
   // response.send(todos)
   const todo = await Todo.findAll();
-  todo.forEach(element => {
-    response.json(todo);
-  });
+  response.json(todo);
 });
 
 app.get("/todos/:id", async function (request, response) {
