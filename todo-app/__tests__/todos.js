@@ -80,9 +80,7 @@ describe("Todo Application", function () {
     });
     const parsedResponse = JSON.parse(response.text);
     const todoID = parsedResponse.id;
-    const deleteResponse = await agent
-      .delete(`/todos/${todoID}`)
-      .send();
+    const deleteResponse = await agent.delete(`/todos/${todoID}`).send();
     const parsedDeleteResponse = JSON.parse(deleteResponse.text);
     expect(parsedDeleteResponse).toBe(true);
   });
