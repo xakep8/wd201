@@ -63,10 +63,10 @@ app.delete("/todos/:id", async function (request, response) {
     }
   }).then(function(rowDeleted){ // rowDeleted will return number of rows deleted
    if(rowDeleted === 1){
-      response.send("true");
+      response.send({completed: true});
     }
   }, function(err){
-    response.send("false");
+    response.send({completed: false});
   });
 });
 
