@@ -84,6 +84,6 @@ describe("Todo Application", function () {
       .delete(`/todos/${todoID}`)
       .send();
     const parsedDeleteResponse = JSON.parse(deleteResponse.text);
-    expect(parsedDeleteResponse.completed).toBe(true);
+    expect(parsedDeleteResponse).toBe(true);
   });
 });
