@@ -7,7 +7,11 @@
     "db:create:test": "NODE_ENV=test npx sequelize-cli db:create",
     "pretest": "NODE_ENV=test npx sequelize-cli db:drop && NODE_ENV=test npx sequelize-cli db:create",
     "test": "NODE_ENV=test jest --detectOpenHandles",
+<<<<<<< HEAD
     "prepare": "cd .. && husky install todo-app/.husky"
+=======
+    "prepare": "husky install"
+>>>>>>> 4e9806b961768d7867fdaf0c148f3d1d4e6d84bb
   },
   "lint-staged": {
     "*.js": [
@@ -22,8 +26,12 @@
     "husky": "^8.0.3",
     "jest": "^29.5.0",
     "lint-staged": "^13.2.0",
+<<<<<<< HEAD
     "prettier": "^2.8.4",
     "supertest": "^6.3.3"
+=======
+    "prettier": "^2.8.4"
+>>>>>>> 4e9806b961768d7867fdaf0c148f3d1d4e6d84bb
   },
   "dependencies": {
     "pg": "^8.10.0",
