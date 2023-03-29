@@ -59,7 +59,7 @@ app.delete("/todos/:id", async function (request, response) {
   // response.send(true)
   Model.destroy({
     where: {
-       id: 123 //this will be your id that you want to delete
+       id: request.params.id //this will be your id that you want to delete
     }
   }).then(function(rowDeleted){ // rowDeleted will return number of rows deleted
    if(rowDeleted === 1){
