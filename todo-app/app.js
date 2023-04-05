@@ -2,10 +2,40 @@ const express = require("express");
 const app = express();
 const { Todo } = require("./models");
 const bodyParser = require("body-parser");
+const path=require("path");
 app.use(bodyParser.json());
 
-app.get("/", function (request, response) {
-  response.send("Hello World");
+app.set("view engine","ejs");
+
+const formattedDate = d => {
+  return d.toISOString().split("T")[0]
+}
+
+var dateToday = new Date()
+const today = formattedDate(dateToday)
+const yesterday = formattedDate(
+  new Date(new Date().setDate(dateToday.getDate() - 1))
+)
+const tomorrow = formattedDate(
+  new Date(new Date().setDate(dateToday.getDate() + 1))
+)
+// Todo.deleteAll();
+// Todo.addTodo({ title: 'Submit assignment', dueDate: yesterday, completed: false });
+// Todo.addTodo({ title: 'Pay rent', dueDate: today, completed: true });
+// Todo.addTodo({ title: 'Service Vehicle', dueDate: today, completed: false });
+// Todo.addTodo({ title: 'File taxes', dueDate: tomorrow, completed: false });
+// Todo.addTodo({ title: 'Pay electric bill', dueDate: tomorrow, completed: false });
+
+app.use(express.static(path.join(__dirname,'public')));
+
+app.get("/",async function(request,response){
+  const allTodos=await Todo.getTodos();
+  if(request.accepts("html")){
+    response.render("index",{allTodos});
+  }
+  else{
+    response.json({allTodos});
+  }
 });
 
 app.get("/todos", async function (_request, response) {
