@@ -19,16 +19,16 @@ const yesterday = formattedDate(
 const tomorrow = formattedDate(
   new Date(new Date().setDate(dateToday.getDate() + 1))
 )
-// Todo.deleteAll();
-// Todo.addTodo({ title: 'Submit assignment', dueDate: yesterday, completed: false });
-// Todo.addTodo({ title: 'Pay rent', dueDate: today, completed: true });
-// Todo.addTodo({ title: 'Service Vehicle', dueDate: today, completed: false });
-// Todo.addTodo({ title: 'File taxes', dueDate: tomorrow, completed: false });
-// Todo.addTodo({ title: 'Pay electric bill', dueDate: tomorrow, completed: false });
 
 app.use(express.static(path.join(__dirname,'public')));
 
 app.get("/",async function(request,response){
+  Todo.deleteAll();
+  Todo.addTodo({ title: 'Submit assignment', dueDate: yesterday, completed: false });
+  Todo.addTodo({ title: 'Pay rent', dueDate: today, completed: true });
+  Todo.addTodo({ title: 'Service Vehicle', dueDate: today, completed: false });
+  Todo.addTodo({ title: 'File taxes', dueDate: tomorrow, completed: false });
+  Todo.addTodo({ title: 'Pay electric bill', dueDate: tomorrow, completed: false });
   const allTodos=await Todo.getTodos();
   if(request.accepts("html")){
     response.render("index",{allTodos});
