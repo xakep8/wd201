@@ -1,7 +1,8 @@
 body{
-    position: relative;
-    display: grid;
-    height: 100vh;
-    justify-content: center;
     font-family: 'Courier New', Courier, monospace;
+    background:white;
+}
+
+.Todo-Item:hover .trash-icon{
+    display: block;
 }
