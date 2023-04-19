@@ -3,8 +3,12 @@ const app = express();
 const { Todo } = require("./models");
 const bodyParser = require("body-parser");
 const path = require("path");
+var csurf = require("csurf");
+var cookieParser= require("cookie-parser");
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser("todo application"));
+app.use(csurf({cookie:true}));
 
 app.set("view engine", "ejs");
 
@@ -24,25 +28,22 @@ const tomorrow = formattedDate(
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", async function (request, response) {
-  Todo.deleteAll();
-  Todo.addTodo({
-    title: "Submit assignment",
-    dueDate: yesterday,
-    completed: false,
-  });
-  Todo.addTodo({ title: "Pay rent", dueDate: today, completed: true });
-  Todo.addTodo({ title: "Service Vehicle", dueDate: today, completed: false });
-  Todo.addTodo({ title: "File taxes", dueDate: tomorrow, completed: false });
-  Todo.addTodo({
-    title: "Pay electric bill",
-    dueDate: tomorrow,
-    completed: false,
-  });
-  const allTodos = await Todo.getTodos();
+  const overdue = await Todo.overdue();
+  const dueToday=await Todo.dueToday();
+  const dueLater=await Todo.dueLater();
   if (request.accepts("html")) {
-    response.render("index", { allTodos });
+    response.render("index",{
+        overdue,
+        dueToday,
+        dueLater,
+        csrfToken: request.csrfToken(),
+    });
   } else {
-    response.json({ allTodos });
+    response.json({
+      overdue,
+      dueToday,
+      dueLater,
+    });
   }
 });
 
@@ -53,8 +54,6 @@ app.get("/todos", async function (_request, response) {
   // First, we have to query our PostgerSQL database using Sequelize to get list of all Todos.
   // Then, we have to respond with all Todos, like:
   // response.send(todos)
-  const todo = await Todo.findAll();
-  response.json(todo);
 });
 
 app.get("/todos/:id", async function (request, response) {
@@ -99,23 +98,14 @@ app.delete("/todos/:id", async function (request, response) {
   // First, we have to query our database to delete a Todo by ID.
   // Then, we have to respond back with true/false based on whether the Todo was deleted or not.
   // response.send(true)
-  Todo.destroy({
-    where: {
-      id: request.params.id, //this will be your id that you want to delete
-    },
-  }).then(
-    function (rowDeleted) {
-      console.log(rowDeleted); // rowDeleted will return number of rows deleted
-      if (rowDeleted === 1) {
-        response.send(true);
-      } else {
-        response.send(false);
-      }
-    },
-    function () {
-      response.send(false);
-    }
-  );
+  console.log("Delete a todo by ID",request.params.id);
+  try{
+    await Todo.remove(request.params.id);
+    return response.json({success:true});
+  }
+  catch(error){
+    return response.status(422).json(error);
+  }
 });
 
 module.exports = app;
