@@ -52,7 +52,8 @@ describe("Todo Application", function () {
     const latestTodo=parsedGroupedResponse.dueToday[dueTodayCount-1];
     res=await agent.get("/");
     csrfToken=extractCsrfToken(res);
-    const markCompleteResponse=await agent.put(`/todos/${latestTodo.id}/markAsCompleted`).send({
+    const markCompleteResponse=await agent.put(`/todos/${latestTodo.id}`).send({
+      complete:latestTodo.completed,
       _csrf:csrfToken,
     });
     const parsedmarkCompleteResponse=JSON.parse(markCompleteResponse.text);
