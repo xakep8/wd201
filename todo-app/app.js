@@ -3,12 +3,12 @@ const app = express();
 const { Todo } = require("./models");
 const bodyParser = require("body-parser");
 const path = require("path");
-var csurf = require("csurf");
+var csurf = require("tiny-csrf");
 var cookieParser= require("cookie-parser");
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser("todo application"));
-app.use(csurf({cookie:true}));
+app.use(csurf("this_should_be_32_character_long",["POST","PUT","DELETE"]));
 
 app.set("view engine", "ejs");
 
@@ -31,11 +31,13 @@ app.get("/", async function (request, response) {
   const overdue = await Todo.overdue();
   const dueToday=await Todo.dueToday();
   const dueLater=await Todo.dueLater();
+  const completedItems=await Todo.completedItems();
   if (request.accepts("html")) {
     response.render("index",{
         overdue,
         dueToday,
         dueLater,
+        completedItems,
         csrfToken: request.csrfToken(),
     });
   } else {
@@ -43,6 +45,7 @@ app.get("/", async function (request, response) {
       overdue,
       dueToday,
       dueLater,
+      completedItems,
     });
   }
 });

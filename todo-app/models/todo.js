@@ -29,31 +29,48 @@ module.exports = (sequelize, DataTypes) => {
     static async dueToday(){
       return this.findAll({
         where:{
-          dueDate:{
-            [Op.eq]:new Date(),
-          },
-        },
+          [Op.and]:[{
+            dueDate:{
+              [Op.eq]:new Date(),
+            },
+            completed:false,
+        }]
+      },
       });
     }
 
     static async dueLater(){
       return this.findAll({
         where:{
-          dueDate:{
-            [Op.gt]:new Date(),
-          },
-        },
+          [Op.and]:[{
+            dueDate:{
+              [Op.gt]:new Date(),
+            },
+            completed:false,
+        }]
+      },
       });
     }
 
     static async overdue(){
       return this.findAll({
         where:{
-          dueDate:{
-            [Op.lt]:new Date(),
-          },
-        },
+          [Op.and]:[{
+            dueDate:{
+              [Op.lt]:new Date(),
+            },
+            completed:false,
+        }]
+      },
       });
+    }
+
+    static async completedItems(){
+      return this.findAll({
+        where:{
+          completed:true,
+        }
+      })
     }
 
     static async deleteAll(){
