@@ -53,7 +53,7 @@ describe("Todo Application", function () {
     res=await agent.get("/");
     csrfToken=extractCsrfToken(res);
     const markCompleteResponse=await agent.put(`/todos/${latestTodo.id}`).send({
-      complete:latestTodo.completed,
+      completed:latestTodo.completed,
       _csrf:csrfToken,
     });
     const parsedmarkCompleteResponse=JSON.parse(markCompleteResponse.text);
