@@ -9,6 +9,7 @@ var passport=require("passport");
 var connectEnsureLogin=require("connect-ensure-login");
 var session=require("express-session");
 var LocalStrategy=require("passport-local");
+var bcrypt=require("bcrypt");
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser("todo application"));
@@ -28,6 +29,8 @@ const yesterday = formattedDate(
 const tomorrow = formattedDate(
   new Date(new Date().setDate(dateToday.getDate() + 1))
 );
+
+const saltRounds=10;
 
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -78,12 +81,13 @@ app.get("/signup",(request,response)=>{
 });
 
 app.post("/users",async (request,response)=>{
+  const hashedPwd= await bcrypt.hash(request.body.password,saltRounds);
   try{
     const user=await User.create({
       firstName: request.body.firstName,
       lastName:request.body.lastName,
       email:request.body.email,
-      password: request.body.password
+      password: hashedPwd
     });
     request.login(user,(err)=>{
       if(err){
