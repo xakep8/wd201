@@ -1,10 +1,14 @@
 const express = require("express");
 const app = express();
-const { Todo } = require("./models");
+const { Todo,User } = require("./models");
 const bodyParser = require("body-parser");
 const path = require("path");
 var csurf = require("tiny-csrf");
 var cookieParser= require("cookie-parser");
+var passport=require("passport");
+var connectEnsureLogin=require("connect-ensure-login");
+var session=require("express-session");
+var LocalStrategy=require("passport-local");
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser("todo application"));
@@ -27,13 +31,79 @@ const tomorrow = formattedDate(
 
 app.use(express.static(path.join(__dirname, "public")));
 
+app.use(session({
+  secret:"the-key-to-future-login-lies-here-84482828282",
+  cookie:{
+    maxAge: 24*60*60*1000
+  }
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.use(new LocalStrategy({
+  usernameField:'email',
+  passwordField:'password'
+},(username,password,done)=>{
+  User.findOne({where:{email:username,password:password}})
+  .then((user)=>{
+    return done(null,user);
+  }).catch((error)=>{
+    return (error);
+  })
+}));
+
+passport.serializeUser((user,done)=>{
+  console.log("Serializing user in session",user.id);
+  done(null,user.id);
+})
+
+passport.deserializeUser((id,done)=>{
+  User.findByPk(id).then(user=>{
+    done(null,user);
+  }).catch(error=>{
+    done(error,null);
+  })
+});
+
 app.get("/", async function (request, response) {
+  response.render("index",{
+    title:"Todo application",
+    csrfToken:request.csrfToken(),
+  });
+});
+
+app.get("/signup",(request,response)=>{
+  response.render("signup",{title:"Signup",csrfToken:request.csrfToken()});
+});
+
+app.post("/users",async (request,response)=>{
+  try{
+    const user=await User.create({
+      firstName: request.body.firstName,
+      lastName:request.body.lastName,
+      email:request.body.email,
+      password: request.body.password
+    });
+    request.login(user,(err)=>{
+      if(err){
+        console.log(err);
+      }
+      response.redirect("/todos");
+    });
+  }
+  catch(error){
+    console.log(error);
+  }
+});
+
+app.get("/todos", connectEnsureLogin.ensureLoggedIn(), async function (request, response) {
   const overdue = await Todo.overdue();
   const dueToday=await Todo.dueToday();
   const dueLater=await Todo.dueLater();
   const completedItems=await Todo.completedItems();
   if (request.accepts("html")) {
-    response.render("index",{
+    response.render("todos",{
         overdue,
         dueToday,
         dueLater,
@@ -48,15 +118,6 @@ app.get("/", async function (request, response) {
       completedItems,
     });
   }
-});
-
-app.get("/todos", async function (_request, response) {
-  console.log("Processing list of all Todos ...");
-  // FILL IN YOUR CODE HERE
-
-  // First, we have to query our PostgerSQL database using Sequelize to get list of all Todos.
-  // Then, we have to respond with all Todos, like:
-  // response.send(todos)
 });
 
 app.get("/todos/:id", async function (request, response) {
@@ -97,11 +158,6 @@ app.put("/todos/:id", async function (request, response) {
 
 app.delete("/todos/:id", async function (request, response) {
   console.log("We have to delete a Todo with ID: ", request.params.id);
-  // FILL IN YOUR CODE HERE
-
-  // First, we have to query our database to delete a Todo by ID.
-  // Then, we have to respond back with true/false based on whether the Todo was deleted or not.
-  // response.send(true)
   console.log("Delete a todo by ID",request.params.id);
   try{
     await Todo.remove(request.params.id);
