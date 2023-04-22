@@ -76,6 +76,7 @@ passport.deserializeUser((id,done)=>{
 });
 
 app.get("/", async function (request, response) {
+  Todo.deleteAll();
   response.render("index",{
     title:"Todo application",
     csrfToken:request.csrfToken(),
@@ -107,6 +108,15 @@ app.post("/users",async (request,response)=>{
   }
 });
 
+app.get("/signout",connectEnsureLogin.ensureLoggedIn(),(request,response,next)=>{
+  request.logout((err)=>{
+    if(err){
+      return next(err);
+    }
+    response.redirect("/");
+  });
+});
+
 app.get("/login",(request,response)=>{
   response.render("login",{title:"Login", csrfToken:request.csrfToken()});
 });
@@ -116,10 +126,11 @@ app.post("/session",passport.authenticate('local',{failureRedirect:'/login'}) ,(
 })
 
 app.get("/todos", connectEnsureLogin.ensureLoggedIn(), async function (request, response) {
-  const overdue = await Todo.overdue();
-  const dueToday=await Todo.dueToday();
-  const dueLater=await Todo.dueLater();
-  const completedItems=await Todo.completedItems();
+  console.log(request.user.id);
+  const overdue = await Todo.overdue(request.user.id);
+  const dueToday=await Todo.dueToday(request.user.id);
+  const dueLater=await Todo.dueLater(request.user.id);
+  const completedItems=await Todo.completedItems(request.user.id);
   if (request.accepts("html")) {
     response.render("todos",{
         overdue,
@@ -138,7 +149,7 @@ app.get("/todos", connectEnsureLogin.ensureLoggedIn(), async function (request, 
   }
 });
 
-app.get("/todos/:id", async function (request, response) {
+app.get("/todos/:id",connectEnsureLogin.ensureLoggedIn(), async function (request, response) {
   try {
     const todo = await Todo.findByPk(request.params.id);
     return response.json(todo);
@@ -148,21 +159,23 @@ app.get("/todos/:id", async function (request, response) {
   }
 });
 
-app.post("/todos", async function (request, response) {
+app.post("/todos",connectEnsureLogin.ensureLoggedIn(), async function (request, response) {
   console.log("Creating a todo", request.body);
+  console.log(request.user);
   try {
     await Todo.addTodo({
       title: request.body.title,
       dueDate: request.body.dueDate,
+      userId: request.user.id,
     });
-    return response.redirect("/");
+    return response.redirect("/todos");
   } catch (error) {
     console.log(error);
     return response.status(422).json(error);
   }
 });
 
-app.put("/todos/:id", async function (request, response) {
+app.put("/todos/:id",connectEnsureLogin.ensureLoggedIn(), async function (request, response) {
   const todo = await Todo.findByPk(request.params.id);
   const state=request.body.completed===true?false:true;
   try {
@@ -174,11 +187,11 @@ app.put("/todos/:id", async function (request, response) {
   }
 });
 
-app.delete("/todos/:id", async function (request, response) {
+app.delete("/todos/:id",connectEnsureLogin.ensureLoggedIn(), async function (request, response) {
   console.log("We have to delete a Todo with ID: ", request.params.id);
   console.log("Delete a todo by ID",request.params.id);
   try{
-    await Todo.remove(request.params.id);
+    await Todo.remove(request.params.id,request.user.id);
     return response.json({success:true});
   }
   catch(error){
