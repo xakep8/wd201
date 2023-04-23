@@ -10,6 +10,7 @@ var connectEnsureLogin=require("connect-ensure-login");
 var session=require("express-session");
 var LocalStrategy=require("passport-local");
 var bcrypt=require("bcrypt");
+const flash=require("connect-flash");
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser("todo application"));
@@ -33,6 +34,8 @@ const tomorrow = formattedDate(
 const saltRounds=10;
 
 app.use(express.static(path.join(__dirname, "public")));
+app.set("views", path.join(__dirname, "views"));
+app.use(flash());
 
 app.use(session({
   secret:"the-key-to-future-login-lies-here-84482828282",
@@ -40,6 +43,11 @@ app.use(session({
     maxAge: 24*60*60*1000
   }
 }));
+
+app.use(function (request,response,next){
+  response.locals.messages=request.flash();
+  next();
+});
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -55,10 +63,10 @@ passport.use(new LocalStrategy({
       return done(null,user);
     }
     else{
-      return done("Invalid Password");
+      return done(null,false,{message:"Invalid Password"});
     }
   }).catch((error)=>{
-    return (error);
+    return done(null,false,{message:"User does not exist"});
   })
 }));
 
@@ -76,7 +84,6 @@ passport.deserializeUser((id,done)=>{
 });
 
 app.get("/", async function (request, response) {
-  Todo.deleteAll();
   response.render("index",{
     title:"Todo application",
     csrfToken:request.csrfToken(),
@@ -89,12 +96,20 @@ app.get("/signup",(request,response)=>{
 
 app.post("/users",async (request,response)=>{
   const hashedPwd= await bcrypt.hash(request.body.password,saltRounds);
+  if(request.body.firstName==""){
+    request.flash("error","First name cannot be left blank");
+    return response.redirect("/signup");
+  }
+  if(request.body.email==""){
+    request.flash("error","Email cannot be left blank");
+    return response.redirect("/signup");
+  }
   try{
     const user=await User.create({
       firstName: request.body.firstName,
       lastName:request.body.lastName,
       email:request.body.email,
-      password: hashedPwd
+      password: hashedPwd,
     });
     request.login(user,(err)=>{
       if(err){
@@ -104,6 +119,8 @@ app.post("/users",async (request,response)=>{
     });
   }
   catch(error){
+    request.flash("error","Email already registered");
+    response.redirect("/signup");
     console.log(error);
   }
 });
@@ -121,12 +138,14 @@ app.get("/login",(request,response)=>{
   response.render("login",{title:"Login", csrfToken:request.csrfToken()});
 });
 
-app.post("/session",passport.authenticate('local',{failureRedirect:'/login'}) ,(reques,response)=>{
+app.post("/session",passport.authenticate('local',{failureRedirect:'/login',failureFlash:true,}) ,(request,response)=>{
   response.redirect("/todos");
 })
 
 app.get("/todos", connectEnsureLogin.ensureLoggedIn(), async function (request, response) {
   console.log(request.user.id);
+  const acc=await User.findByPk(request.user.id);
+  const userName=acc.firstName+" "+acc.lastName;
   const overdue = await Todo.overdue(request.user.id);
   const dueToday=await Todo.dueToday(request.user.id);
   const dueLater=await Todo.dueLater(request.user.id);
@@ -137,6 +156,7 @@ app.get("/todos", connectEnsureLogin.ensureLoggedIn(), async function (request, 
         dueToday,
         dueLater,
         completedItems,
+        userName,
         csrfToken: request.csrfToken(),
     });
   } else {
@@ -145,6 +165,7 @@ app.get("/todos", connectEnsureLogin.ensureLoggedIn(), async function (request, 
       dueToday,
       dueLater,
       completedItems,
+      userName,
     });
   }
 });
@@ -162,6 +183,14 @@ app.get("/todos/:id",connectEnsureLogin.ensureLoggedIn(), async function (reques
 app.post("/todos",connectEnsureLogin.ensureLoggedIn(), async function (request, response) {
   console.log("Creating a todo", request.body);
   console.log(request.user);
+  if(request.body.title==""){
+    request.flash("error","To-Dos cannot be blank");
+    return response.redirect("/todos");
+  }
+  else if(request.body.dueDate==""){
+    request.flash("error","Date is required to make a To-Do");
+    return response.redirect("/todos");
+  }
   try {
     await Todo.addTodo({
       title: request.body.title,
