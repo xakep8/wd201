@@ -104,6 +104,10 @@ app.post("/users",async (request,response)=>{
     request.flash("error","Email cannot be left blank");
     return response.redirect("/signup");
   }
+  if(request.body.password==""||request.body.password.length<6){
+    request.flash("error","Please enter a valid password of minimum length of 6 characters");
+    return response.redirect("/signup");
+  }
   try{
     const user=await User.create({
       firstName: request.body.firstName,
