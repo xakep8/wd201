@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
       })
     }
 
-    static deleteAll(){
+    static async deleteAll(){
       this.destroy({where:{}});
     }
   }

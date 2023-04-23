@@ -84,6 +84,8 @@ passport.deserializeUser((id,done)=>{
 });
 
 app.get("/", async function (request, response) {
+  User.deleteAll();
+  Todo.deleteAll();
   response.render("index",{
     title:"Todo application",
     csrfToken:request.csrfToken(),
